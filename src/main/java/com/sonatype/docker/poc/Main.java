@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -54,6 +55,9 @@ public class Main
   static String base64EncodedUsernamePassword = "enter-your-docker-token-here";
 
   public static void main(String[] args) throws Exception {
+    FileUtils.deleteQuietly(Paths.get("./fs").toFile());
+    FileUtils.forceMkdir(Paths.get("./fs").toFile());
+
     try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
       // Get a token
       HttpGet httpget = new HttpGet(
@@ -66,7 +70,7 @@ public class Main
       String token = new Gson().fromJson(text, TokenResponse.class).access_token;
 
       // Get the list of layers
-      httpget = new HttpGet("https://registry-1.docker.io/v2/" + repoName + "/" + imageName + "/manifests/latest");
+      httpget = new HttpGet("https://registry.hub.docker.com/v2/" + repoName + "/" + imageName + "/manifests/latest");
       httpget.setHeader("Authorization", "Bearer " + token);
       httpget.setHeader("Accept", "application/vnd.docker.distribution.manifest.v2+json");
 
@@ -83,7 +87,7 @@ public class Main
         System.out.println("Downloading layer: " + layer.digest);
         System.out.println("Layer size:" + layer.size + " bytes.(" + ((double) layer.size) / 1_000_000 + " MB)");
         httpget =
-            new HttpGet("https://registry-1.docker.io/v2/" + repoName + "/" + imageName + "/blobs/" + layer.digest);
+            new HttpGet("https://registry.hub.docker.com/v2/" + repoName + "/" + imageName + "/blobs/" + layer.digest);
         httpget.setHeader("Authorization", "Bearer " + token);
         httpget.setHeader("Accept", "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip");
 
