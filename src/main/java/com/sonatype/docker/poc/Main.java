@@ -51,7 +51,7 @@ public class Main
 
   static String repoName = "library";
 
-  static String base64EncodedUsernamePassword = "a29yYXl0dWdheTpBZmdUZ1g5Q0Y4UjJq";
+  static String base64EncodedUsernamePassword = "enter-your-docker-token-here";
 
   public static void main(String[] args) throws Exception {
     try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
