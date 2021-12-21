@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.gson.Gson;
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
@@ -44,17 +44,17 @@ public class Main
     List<Layer> layers;
   }
 
-  static String repoName = "koraytugay";
-
-  static String imageName = "white-rabbit";
+  //static String repoName = "koraytugay";
+  //
+  //static String imageName = "white-rabbit";
 
   //static String repoName = "library";
-
-  //static String imageName = "hello-world";
-
-  //static String repoName = "sonatype";
   //
-  //static String imageName = "gitlab-nexus-iq-pipeline";
+  //static String imageName = "httpd";
+
+  static String repoName = "sonatype";
+
+  static String imageName = "gitlab-nexus-iq-pipeline";
 
   static String base64EncodedUsernamePassword = "base64encoded(username:password)";
 
@@ -113,16 +113,23 @@ public class Main
 
   public static void unTarGz(List<File> files) throws IOException {
     for (File file : files) {
+      System.out.println("=============");
+      System.out.println("Processing file:" + file.getName());
+
       TarArchiveInputStream tararchiveinputstream =
           new TarArchiveInputStream(
               new GzipCompressorInputStream(
                   new BufferedInputStream(Files.newInputStream(file.toPath()))));
 
-      ArchiveEntry archiveentry;
-      while ((archiveentry = tararchiveinputstream.getNextEntry()) != null) {
+      TarArchiveEntry archiveentry;
+      while ((archiveentry = (TarArchiveEntry) tararchiveinputstream.getNextEntry()) != null) {
         Path pathEntryOutput = Paths.get("./fs").resolve(archiveentry.getName());
         if (archiveentry.isDirectory()) {
           Files.createDirectories(pathEntryOutput);
+          continue;
+        }
+
+        if (archiveentry.getName().contains(".wh..wh..")) {
           continue;
         }
 
@@ -133,17 +140,40 @@ public class Main
           catch (NoSuchFileException noSuchFileException) {
             System.out.println("Could not delete:" + archiveentry.getName());
           }
+          continue;
+        }
+
+        if (pathEntryOutput.toFile().exists()) {
+          Files.delete(pathEntryOutput);
+        }
+        if (archiveentry.isSymbolicLink()) {
+          Files.deleteIfExists(pathEntryOutput);
+          Path link = Paths.get("./fs").resolve(archiveentry.getName());
+          Path target = Paths.get(archiveentry.getLinkName());
+          try {
+            Files.createSymbolicLink(link, target);
+          }
+          catch (Exception e) {
+            System.out.println("\t=============");
+            System.out.println("\tCould not create symbolic link:");
+            System.out.println("\tLink:" + link);
+            System.out.println("\tTarget:" + target);
+            System.out.println("\tLink exists: " + link.toFile().exists());
+            System.out.println("\tTarget exists: " + target.toFile().exists());
+            System.out.println("\t=============");
+          }
+        }
+        else if (archiveentry.getSize() == 0) {
+          Files.createFile(Paths.get("./fs").resolve(archiveentry.getName()));
         }
         else {
-          if (archiveentry.getSize() == 0) {
-            Files.createFile(Paths.get("./fs").resolve(archiveentry.getName()));
-          } else {
-            Files.copy(tararchiveinputstream, pathEntryOutput);
-          }
+          Files.copy(tararchiveinputstream, pathEntryOutput);
         }
       }
 
       tararchiveinputstream.close();
+
+      System.out.println("=============");
     }
   }
 }

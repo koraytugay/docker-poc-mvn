@@ -8,7 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.io.IOUtils;
 
@@ -28,7 +28,7 @@ public class DockerApproach
   //  # clean up temporary container
   //  docker rm my_container
   public static void main(String[] args) throws IOException, InterruptedException {
-    String imageName = "hello-world";
+    String imageName = "sonatype/gitlab-nexus-iq-pipeline";
 
     // Create container from the image..
     String randomContainerName = randomUUID().toString();
@@ -53,16 +53,33 @@ public class DockerApproach
     TarArchiveInputStream tararchiveinputstream
         = new TarArchiveInputStream(new BufferedInputStream(Files.newInputStream(file.toPath())));
 
-    ArchiveEntry archiveentry;
-    while ((archiveentry = tararchiveinputstream.getNextEntry()) != null) {
-      Path pathEntryOutput = Paths.get(folderName).resolve(archiveentry.getName());
-      if (archiveentry.isDirectory()) {
+    TarArchiveEntry archiveEntry;
+    while ((archiveEntry = (TarArchiveEntry) tararchiveinputstream.getNextEntry()) != null) {
+      Path pathEntryOutput = Paths.get(folderName).resolve(archiveEntry.getName());
+      if (archiveEntry.isDirectory()) {
         if (!Files.exists(pathEntryOutput)) {
           Files.createDirectories(pathEntryOutput);
         }
       }
       else {
-        if (archiveentry.getSize() != 0) {
+        if (archiveEntry.isSymbolicLink()) {
+          Files.deleteIfExists(pathEntryOutput);
+          Path link = Paths.get(folderName).resolve(archiveEntry.getName());
+          Path target = Paths.get(archiveEntry.getLinkName());
+          try {
+            Files.createSymbolicLink(link, target);
+          }
+          catch (Exception e) {
+            System.out.println("\t=============");
+            System.out.println("\tCould not create symbolic link:");
+            System.out.println("\tLink:" + link);
+            System.out.println("\tTarget:" + target);
+            System.out.println("\tLink exists: " + link.toFile().exists());
+            System.out.println("\tTarget exists: " + target.toFile().exists());
+            System.out.println("\t=============");
+          }
+        }
+        if (archiveEntry.getSize() != 0) {
           Files.copy(tararchiveinputstream, pathEntryOutput);
         }
       }
