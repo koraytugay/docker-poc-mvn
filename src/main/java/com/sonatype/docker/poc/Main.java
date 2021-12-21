@@ -44,13 +44,13 @@ public class Main
     List<Layer> layers;
   }
 
-  //static String repoName = "koraytugay";
+  static String repoName = "koraytugay";
 
-  //static String imageName = "white-rabbit";
+  static String imageName = "white-rabbit";
 
-  static String repoName = "library";
+  //static String repoName = "library";
 
-  static String imageName = "hello-world";
+  //static String imageName = "hello-world";
 
   //static String repoName = "sonatype";
   //
@@ -122,23 +122,22 @@ public class Main
       while ((archiveentry = tararchiveinputstream.getNextEntry()) != null) {
         Path pathEntryOutput = Paths.get("./fs").resolve(archiveentry.getName());
         if (archiveentry.isDirectory()) {
-          if (!Files.exists(pathEntryOutput)) {
-            Files.createDirectory(pathEntryOutput);
+          Files.createDirectories(pathEntryOutput);
+          continue;
+        }
+
+        if (archiveentry.getName().contains(".wh")) {
+          try {
+            Files.delete(Paths.get("./fs").resolve(archiveentry.getName().replace(".wh.", "")));
+          }
+          catch (NoSuchFileException noSuchFileException) {
+            System.out.println("Could not delete:" + archiveentry.getName());
           }
         }
         else {
-          if (archiveentry.getName().contains(".wh")) {
-            try {
-              Files.delete(Paths.get("./fs").resolve(archiveentry.getName().replace(".wh.", "")));
-            }
-            catch (NoSuchFileException noSuchFileException) {
-              noSuchFileException.printStackTrace();
-            }
-          }
-          else {
-            if (Files.exists(pathEntryOutput)) {
-              Files.delete(pathEntryOutput);
-            }
+          if (archiveentry.getSize() == 0) {
+            Files.createFile(Paths.get("./fs").resolve(archiveentry.getName()));
+          } else {
             Files.copy(tararchiveinputstream, pathEntryOutput);
           }
         }
