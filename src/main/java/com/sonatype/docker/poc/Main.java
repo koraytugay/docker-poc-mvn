@@ -44,15 +44,19 @@ public class Main
     List<Layer> layers;
   }
 
-  //static String imageName = "white-rabbit";
-
   //static String repoName = "koraytugay";
 
-  static String imageName = "httpd";
+  //static String imageName = "white-rabbit";
 
   static String repoName = "library";
 
-  static String base64EncodedUsernamePassword = "enter-your-docker-token-here";
+  static String imageName = "hello-world";
+
+  //static String repoName = "sonatype";
+  //
+  //static String imageName = "gitlab-nexus-iq-pipeline";
+
+  static String base64EncodedUsernamePassword = "base64encoded(username:password)";
 
   public static void main(String[] args) throws Exception {
     FileUtils.deleteQuietly(Paths.get("./fs").toFile());
