@@ -91,7 +91,11 @@ public class LocalImages
         Files.createFile(Paths.get("./fs").resolve(archiveentry.getName()));
       }
       else {
-        Files.copy(tararchiveinputstream, pathEntryOutput);
+        try {
+          Files.copy(tararchiveinputstream, pathEntryOutput);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       }
 
     }

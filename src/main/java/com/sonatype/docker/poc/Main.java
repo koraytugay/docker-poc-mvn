@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -52,9 +54,9 @@ public class Main
   //
   //static String imageName = "httpd";
 
-  static String repoName = "sonatype";
+  static String repoName = "bigspotteddog";
 
-  static String imageName = "gitlab-nexus-iq-pipeline";
+  static String imageName = "docker-nexus3";
 
   static String base64EncodedUsernamePassword = "base64encoded(username:password)";
 
@@ -134,11 +136,21 @@ public class Main
         }
 
         if (archiveentry.getName().contains(".wh")) {
+          Path resolvedPath = Paths.get("./fs").resolve(archiveentry.getName().replace(".wh.", ""));
           try {
-            Files.delete(Paths.get("./fs").resolve(archiveentry.getName().replace(".wh.", "")));
+            if (Files.isDirectory(resolvedPath)) {
+              FileUtils.deleteDirectory(resolvedPath.toFile());
+            } else {
+              Files.delete(resolvedPath);
+            }
           }
           catch (NoSuchFileException noSuchFileException) {
-            System.out.println("Could not delete:" + archiveentry.getName());
+            System.out.println("Could not delete file:" + resolvedPath);
+            System.out.println("This file does not exist.");
+          }
+          catch (DirectoryNotEmptyException directoryNotEmptyException) {
+            System.out.println("Could not delete directory:" + resolvedPath);
+            directoryNotEmptyException.printStackTrace();
           }
           continue;
         }
@@ -167,7 +179,16 @@ public class Main
           Files.createFile(Paths.get("./fs").resolve(archiveentry.getName()));
         }
         else {
-          Files.copy(tararchiveinputstream, pathEntryOutput);
+          try {
+            Files.copy(tararchiveinputstream, pathEntryOutput);
+          }
+          catch (FileAlreadyExistsException e) {
+            System.out.println("File exists but was not deleted successfully:" + pathEntryOutput);
+            System.out.println("This seems to happen when the existing file is a symbolic link but new file is actual");
+            System.out.println("Will delete the file again and copy the new file.");
+            Files.delete(pathEntryOutput);
+            Files.copy(tararchiveinputstream, pathEntryOutput);
+          }
         }
       }
 
